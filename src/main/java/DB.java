@@ -72,6 +72,7 @@ public class DB {
         loadRecords();
         loadSales();
         loadInvoices();
+
     }
 
     private void createTables() {
@@ -110,7 +111,7 @@ public class DB {
     }
 
 
-    //load albums from database, and update data model with results
+    //load consignors from database, and update data model with results
     public static boolean loadConsignors() {
         try {
 
@@ -139,7 +140,7 @@ public class DB {
         }
     }
 
-    //load books from database, and update data model with results
+    //load records from database, and update data model with results
     public static boolean loadRecords() {
         try {
 
@@ -227,7 +228,7 @@ public class DB {
     }
 
 
-    private static boolean searchConsignors(String search){
+    public static boolean searchConsignors(String search){
         try{
 
             if (rsConsignors!=null) {
@@ -239,8 +240,8 @@ public class DB {
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
-            psSearch.setString(1, search);
-            psSearch.setString(2, search);
+            psSearch.setString(1, "%" + search + "%");
+            psSearch.setString(2, "%" + search + "%");
             //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
             System.out.println(psSearch.toString());
 
@@ -264,7 +265,7 @@ public class DB {
         }
     }
 
-    private static boolean searchRecords(String search){
+    public static boolean searchRecords(String search){
         try{
 
             if (rsRecords!=null) {
@@ -276,15 +277,15 @@ public class DB {
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
-            psSearch.setString(1, search);
-            psSearch.setString(2, search);
+            psSearch.setString(1, "%" + search + "%");
+            psSearch.setString(2, "%" + search + "%");
             //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
             System.out.println(psSearch.toString());
 
             rsRecords = psSearch.executeQuery();
 
             if (rDM == null) {
-                //create new consignorDataModel if it doesn't exist
+                //create new recordDataModel if it doesn't exist
                 rDM = new recordDataModel(rsRecords);
             } else {
                 //Or, if one already exists, update its ResultSet
@@ -301,7 +302,7 @@ public class DB {
         }
     }
 
-    private static boolean searchSales(int search){
+    public static boolean searchSales(int search){
         try{
 
             if (rsSales!=null) {
@@ -320,7 +321,7 @@ public class DB {
             rsSales = psSearch.executeQuery();
 
             if (sDM == null) {
-                //create new consignorDataModel if it doesn't exist
+                //create new salesDataMode if it doesn't exist
                 sDM = new saleDataModel(rsSales);
             } else {
                 //Or, if one already exists, update its ResultSet
@@ -337,7 +338,7 @@ public class DB {
         }
     }
 
-    private static boolean searchInvoices(int search){
+    public static boolean searchInvoices(int search){
         try{
 
             if (rsInvoices!=null) {
@@ -356,7 +357,7 @@ public class DB {
             rsInvoices = psSearch.executeQuery();
 
             if (iDM == null) {
-                //create new consignorDataModel if it doesn't exist
+                //create new invoiceDataModel if it doesn't exist
                 iDM = new invoiceDataModel(rsInvoices);
             } else {
                 //Or, if one already exists, update its ResultSet
@@ -373,7 +374,7 @@ public class DB {
         }
     }
 
-    public static void shutdown(){
+    public static void shutdown() {
         try {
             if (rsConsignors != null) {
                 rsConsignors.close();

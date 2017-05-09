@@ -58,9 +58,12 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
         resultsJTable.setGridColor(Color.BLACK);
         resultsJTable.setModel(DB.cDM);
         String[] columnNames = {"CID", "Name", "Phone Number"};
-        for(int i=0;i<columnNames.length;i++){
-            resultsJTable.getColumnModel().getColumn(i).setHeaderValue(columnNames[i]);
+        for (int x = 0; x < columnNames.length; x++) {
+            resultsJTable.getColumnModel().getColumn(x).setHeaderValue(columnNames[x]);
+
+
         }
+
 
     }
 
@@ -103,6 +106,8 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
         menuBar.add(invoicesMenu);
         menuBar.add(quitMenu);
 
+
+
         addConsignorMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -122,6 +127,8 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                 updateButton.setVisible(false);
                 selectButton.setVisible(false);
                 notificationCheckBox.setVisible(false);
+
+
 
                 label4.setText("Name: ");
                 label5.setText("Phone Number: ");
@@ -236,13 +243,13 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                 label5.setVisible(true);
                 addButton.setVisible(false);
                 searchButton.setVisible(true);
-                updateButton.setVisible(false);
-                selectButton.setVisible(true);
+                updateButton.setVisible(true);
+                selectButton.setVisible(false);
                 notificationCheckBox.setVisible(false);
 
                 label5.setText("Search by Artist or Title");
                 searchButton.setText("Search");
-                selectButton.setText("Sell Record");
+                updateButton.setText("Sell Record");
 
             }
         });
@@ -344,6 +351,22 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        searchButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+
+
+                String search = text5.getText();
+
+                DB.searchConsignors(search);
+
+                String[] consignorsColumns = {"CID", "Name","Phone Number"};
+                for(int x = 0; x <consignorsColumns.length; x++) {
+                    resultsJTable.getColumnModel().getColumn(x).setHeaderValue(consignorsColumns[x]);
+                }
+
+            }
+        });
 
 
     }
