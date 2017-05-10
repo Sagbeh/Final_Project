@@ -494,6 +494,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
         });
 
         //switch block changes button functionality throughout the program
+        // https://docs.oracle.com/javase/tutorial/java/nutsandbolts/switch.html
         searchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -501,6 +502,11 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                 switch (searchFunction) {
                     case 1:
                         String search = text5.getText();
+
+                        if (search.isEmpty()) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Enter a name or phone number");
+                            return;
+                        }
                         DB.searchConsignors(search);
                         String[] consignorsColumns = {"CID", "Name", "Phone Number"};
                         for (int x = 0; x < consignorsColumns.length; x++) {
@@ -509,6 +515,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                         break;
                     case 2:
                         search = text5.getText();
+                        if (search.isEmpty()) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Enter an artist or title");
+                            return;
+                        }
                         if (viewAllRecordsRadioButton.isSelected()) {
                             DB.searchAllRecords(search);
                         }
@@ -523,6 +533,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                         break;
                     case 3:
                         search = text5.getText();
+                        if (search.isEmpty()) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Enter an artist or title");
+                            return;
+                        }
                         DB.searchSales(search);
                         String[] salesColumns = {"SID", "RID", "Sold Date", "Sold Price"};
                         for (int x = 0; x < salesColumns.length; x++) {
@@ -531,6 +545,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                         break;
                     case 4:
                         search = text5.getText();
+                        if (search.isEmpty()) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "SID cannot be blank");
+                            return;
+                        }
                         DB.searchInvoicesBySID(search);
                         String[] invoicesColumns = {"IID", "SID", "CID", "CID Profit", "Store Profit", "Amount Paid", "Balance", "Invoice Date"};
                         for (int x = 0; x < invoicesColumns.length; x++) {
@@ -539,6 +557,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                         break;
                     case 5:
                         search = text5.getText();
+                        if (search.isEmpty()) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "CID cannot be blank");
+                            return;
+                        }
                         DB.searchInvoicesByCID(search);
                         resultsJTable.setGridColor(Color.BLACK);
                         resultsJTable.setModel(DB.iDM);
@@ -549,6 +571,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                         break;
                     case 6:
                         search = text5.getText();
+                        if (search.isEmpty()) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Enter an artist or title");
+                            return;
+                        }
                         DB.searchRecordsForSale(search);
 
                         break;
@@ -683,7 +709,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
 
 
                     } catch (NumberFormatException nfe) {
-                    JOptionPane.showMessageDialog(RecordStoreGUI.this, "Invoice is already paid");
+                    JOptionPane.showMessageDialog(RecordStoreGUI.this, "Invalid entry");
                     return;
                 }
 
@@ -701,10 +727,18 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                 }
                 switch (selectFunction) {
                     case 1:
+                        if (selectedRow == -1) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select a row");
+                            return;
+                        }
                         getCID(selectedRow);
 
                         break;
                     case 2:
+                        if (selectedRow == -1) {
+                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select a row");
+                            return;
+                        }
                         getSalesID(selectedRow);
 
                         break;

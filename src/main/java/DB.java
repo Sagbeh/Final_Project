@@ -95,6 +95,9 @@ public class DB {
 
     //This runs and if a Record is older than 30 days old, the sale price is reduced to 1 and the status is changed to 2 which indicates that it is in the bargain bin
     //execute this query in your DB to allow user to use eventscheduler: GRANT SUPER ON *.* TO 'user'@'localhost' IDENTIFIED BY 'password';
+    //Found this in https://dev.mysql.com/doc/refman/5.7/en/events-configuration.html
+    //and http://stackoverflow.com/questions/26767899/mysql-event-scheduler-grant-super-privileges-not-working
+    //aaaaaaand http://stackoverflow.com/questions/19217274/update-column-if-date-is-older-than-30-days
     private void eventScheduler() {
 
         try {
@@ -154,6 +157,7 @@ public class DB {
     }
 
     //this method is used when creating invoices after selling a record
+    //this helped me figure this out http://stackoverflow.com/questions/6810375/resultset-convert-to-int-from-query
     public int getSID(int rid) {
 
         int val = 0;
