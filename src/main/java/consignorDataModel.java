@@ -1,3 +1,5 @@
+//This is the consignorDataModel.  Handles the consignor table interfacing with the JTable.
+
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.sql.ResultSet;

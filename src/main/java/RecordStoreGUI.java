@@ -1,3 +1,6 @@
+/* This is the gui that runs the show.  A JTable is used to interface with the database.
+* The Jbuttons, labels, and text fields are used throughout and change function depending on what menu item is selected.  More information is below*/
+
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
@@ -29,13 +32,16 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
     private JRadioButton viewBargainBinRadioButton;
     private JRadioButton viewDonationsRadioButton;
 
+    //allows me to call query methods
     DB guiDB;
 
+    //These functions determine what the buttons do
     int searchFunction;
     int addFunction;
     int updateFunction;
     int selectFunction;
 
+    //global variables for invoice updates
     double cProfit = 0.4;
     double sProfit = 0.6;
     double amountPaid = 0.00;
@@ -66,7 +72,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
         viewAllRecordsRadioButton.setVisible(false);
         viewBargainBinRadioButton.setVisible(false);
         viewDonationsRadioButton.setVisible(false);
-        ButtonGroup group = new ButtonGroup();
+        ButtonGroup group = new ButtonGroup(); //creates a button group so only one radio button can be selected at a time
         group.add(viewAllRecordsRadioButton);
         group.add(viewBargainBinRadioButton);
         group.add(viewDonationsRadioButton);
@@ -78,8 +84,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
 
     }
 
+    //Configures JMenu items and buttons
     private void configureMenus() {
 
+        //Creates the menu
         menuBar = new JMenuBar();
 
         JMenu consignorsMenu = new JMenu("Consignors");
@@ -118,12 +126,15 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
         menuBar.add(quitMenu);
 
 
+        //This menu allows you to add a consignor
         addConsignorMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
                 addFunction = 1;
 
+
+                //Set's the tables model
                 resultsJTable.setGridColor(Color.BLACK);
                 resultsJTable.setModel(DB.cDM);
                 String[] columnNames = {"CID", "Name", "Phone Number"};
@@ -132,6 +143,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
                 }
 
 
+                //Throughout the code I make certain gui items visible and invisible depending on the menu being used
                 text1.setVisible(false);
                 text2.setVisible(false);
                 text3.setVisible(false);
@@ -160,6 +172,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //allows you to search for consignors
         searchConsignorsMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -200,6 +213,8 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+
+        //allows you to search for records, and mark records as notified
         searchRecordsMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -242,12 +257,14 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //Menu used to add a new record
         addNewRecordMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
 
                 addFunction = 2;
                 selectFunction = 1;
+                searchFunction = 1;
 
                 resultsJTable.setGridColor(Color.BLACK);
                 resultsJTable.setModel(DB.cDM);
@@ -292,6 +309,8 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //This is where you can sell a record
+
         makeSaleMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -332,6 +351,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //sales can be viewed here
         searchSalesMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -371,6 +391,8 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+
+        //This is where you pay consignors
         payConsignorsMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -416,6 +438,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //Here you can see how much each consignor has been paid
         viewPaymentsMenu.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -458,6 +481,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //quits the program
         quit.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -469,6 +493,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             }
         });
 
+        //switch block changes button functionality throughout the program
         searchButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -606,46 +631,60 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             @Override
             public void actionPerformed(ActionEvent e) {
 
+                try {
                 switch (updateFunction) {
-                    case 1:
-                        if (notificationCheckBox.isSelected()) {
-                            DB.rDM.notify(resultsJTable.getSelectedRow(), "Y");
-                        } else {
-                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select a record to update");
-                            return;
-                        }
-                        break;
-                    case 2:
-                        int row = resultsJTable.getSelectedRow();
 
-                        java.util.Date date = new java.util.Date();
-                        Date soldDate = new java.sql.Date(date.getTime());
+                        case 1:
+                            if (notificationCheckBox.isSelected()) {
+                                DB.rDM.notify(resultsJTable.getSelectedRow(), "Y");
+                            } else {
+                                JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select a record to update");
+                                return;
+                            }
+                            break;
+                        case 2:
+                            int row = resultsJTable.getSelectedRow();
+                            if (row == -1) {
 
-                        DB.sDM.insertRow(Integer.parseInt(DB.rDM.getValueAt(row, 0).toString()), Double.parseDouble(DB.rDM.getValueAt(row, 4).toString()), (java.sql.Date) soldDate);
-                        DB.iDM.insertRow(guiDB.getSID(Integer.parseInt(DB.rDM.getValueAt(row, 0).toString())), Integer.parseInt(DB.rDM.getValueAt(row, 1).toString()),
-                                (Double.parseDouble(DB.rDM.getValueAt(row, 4).toString())) * cProfit, (Double.parseDouble(DB.rDM.getValueAt(row, 4).toString())) * sProfit,
-                                amountPaid, (Double.parseDouble(DB.rDM.getValueAt(row, 4).toString())) * cProfit, (java.sql.Date) soldDate);
-                        DB.rDM.sold(row);
+                                JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select a record to sell");
+                                return;
+                            }
 
-                        break;
-                    case 3:
-                        row = resultsJTable.getSelectedRow();
+                            //This section is special.  When a record is sold, a sales record and invoice record are created, and the record is marked as sold
+                            java.util.Date date = new java.util.Date();
+                            Date soldDate = new java.sql.Date(date.getTime());
 
-                        if (notificationCheckBox.isSelected()) {
-                            DB.iDM.updateRow(row, Double.parseDouble(DB.iDM.getValueAt(row, 3).toString()), 0.00);
-                        } else {
-                            JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select an invoice to update");
-                            return;
-                        }
-                    case 4:
-                        int search = Integer.parseInt(text5.getText());
-                        DB.runTotals(search);
-                        String[] invoicesColumns = {"CID", "Total Paid"};
-                        for (int x = 0; x < invoicesColumns.length; x++) {
-                            resultsJTable.getColumnModel().getColumn(x).setHeaderValue(invoicesColumns[x]);
+                            DB.sDM.insertRow(Integer.parseInt(DB.rDM.getValueAt(row, 0).toString()), Double.parseDouble(DB.rDM.getValueAt(row, 4).toString()), (java.sql.Date) soldDate);
+                            DB.iDM.insertRow(guiDB.getSID(Integer.parseInt(DB.rDM.getValueAt(row, 0).toString())), Integer.parseInt(DB.rDM.getValueAt(row, 1).toString()),
+                                    (Double.parseDouble(DB.rDM.getValueAt(row, 4).toString())) * cProfit, (Double.parseDouble(DB.rDM.getValueAt(row, 4).toString())) * sProfit,
+                                    amountPaid, (Double.parseDouble(DB.rDM.getValueAt(row, 4).toString())) * cProfit, (java.sql.Date) soldDate);
+                            DB.rDM.sold(row);
 
-                        }
+                            break;
+                        case 3:
+                            row = resultsJTable.getSelectedRow();
 
+                            if (notificationCheckBox.isSelected()) {
+                                guiDB.iDM.updateRow(row, Double.parseDouble(DB.iDM.getValueAt(row, 3).toString()), 0.00);
+                            } else {
+                                JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select an invoice to update");
+                                return;
+                            }
+                        case 4:
+                            int search = Integer.parseInt(text5.getText());
+                            DB.runTotals(search);
+                            String[] invoicesColumns = {"CID", "Total Paid"};
+                            for (int x = 0; x < invoicesColumns.length; x++) {
+                                resultsJTable.getColumnModel().getColumn(x).setHeaderValue(invoicesColumns[x]);
+
+                            }
+
+                    }
+
+
+                    } catch (NumberFormatException nfe) {
+                    JOptionPane.showMessageDialog(RecordStoreGUI.this, "Invoice is already paid");
+                    return;
                 }
 
             }
@@ -656,7 +695,10 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
             @Override
             public void actionPerformed(ActionEvent e) {
                 int selectedRow = resultsJTable.getSelectedRow();
-
+                if (selectedRow == -1) {
+                    JOptionPane.showMessageDialog(RecordStoreGUI.this, "Select a row");
+                    return;
+                }
                 switch (selectFunction) {
                     case 1:
                         getCID(selectedRow);
@@ -675,6 +717,7 @@ public class RecordStoreGUI extends JFrame implements WindowListener{
 
     }
 
+    //getCID and getSalesID are used for the payment menus to populate data
     private void getCID(int cid) {
         text1.setText(DB.cDM.getValueAt(cid, 0).toString());
     }

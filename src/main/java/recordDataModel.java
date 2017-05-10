@@ -1,3 +1,7 @@
+/*This is the recordsDataModel class.  It determines how data from the database (specifically the records table)
+ will interact with the JTable
+  */
+
 import javax.swing.table.AbstractTableModel;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -109,7 +113,7 @@ public class recordDataModel extends AbstractTableModel {
         }
 
     }
-
+//Updates the notification column
     public boolean notify(int row, String notified) {
 
         try {
@@ -126,7 +130,7 @@ public class recordDataModel extends AbstractTableModel {
         }
 
     }
-
+//Updates the sold column
     public boolean sold(int row) {
 
         try {

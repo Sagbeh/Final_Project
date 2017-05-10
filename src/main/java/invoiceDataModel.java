@@ -1,3 +1,5 @@
+//The invoices table contains profit data for the store and the consignors//
+
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.sql.ResultSet;
@@ -110,6 +112,7 @@ public class invoiceDataModel extends AbstractTableModel {
 
     }
 
+    //This method is used to updated invoices and mark them as paid
     public boolean updateRow(int row, double amountPaid, double balance) {
 
         try {

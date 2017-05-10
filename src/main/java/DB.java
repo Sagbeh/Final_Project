@@ -1,3 +1,12 @@
+/* This is the main database class.  It contains the database information and queries that will be used.
+* The DB class contains the columns for all the tables, the table names, DataModels, etc.  It
+* also contains the event scheduler which runs every time the program is open to see if there are any records
+* in the records table that have not sold in over 30 days.  It will handle moving items to the bargain bin and
+* donated to thrift shops.*/
+
+
+
+
 import java.sql.*;
 
 public class DB {
@@ -95,10 +104,10 @@ public class DB {
 
             enableEventSchedulerSQL.executeUpdate();
 
-            String configureBargainEvent = "CREATE EVENT if not exists newEvent ON SCHEDULE EVERY 1 DAY DO UPDATE records SET status= 2 and sales_price = 1.00 WHERE date_added<=CURRENT_DATE - INTERVAL 30 DAY and sold = \"N\"";
+            String configureBargainEvent = "CREATE EVENT if not exists newEvent ON SCHEDULE EVERY 1 DAY DO UPDATE records SET status= 2 and sales_price = 1.00 WHERE date_added<=CURRENT_DATE - INTERVAL 30 DAY and sold = \'N\'";
             PreparedStatement configureBargainEventSQL = conn.prepareStatement(configureBargainEvent, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
-            String configureDonationEvent = "CREATE EVENT if not exists newEvent ON SCHEDULE EVERY 1 DAY DO UPDATE records SET status= 3 and sales_price = 0.00 WHERE date_added<=CURRENT_DATE - INTERVAL 365 DAY and sold = \"N\"";
+            String configureDonationEvent = "CREATE EVENT if not exists newEvent ON SCHEDULE EVERY 1 DAY DO UPDATE records SET status= 3 and sales_price = 0.00 WHERE date_added<=CURRENT_DATE - INTERVAL 365 DAY and sold = \'N\'";
             PreparedStatement configureDonationEventSQL = conn.prepareStatement(configureDonationEvent, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
             configureBargainEventSQL.executeUpdate();
@@ -144,6 +153,7 @@ public class DB {
         }
     }
 
+    //this method is used when creating invoices after selling a record
     public int getSID(int rid) {
 
         int val = 0;
@@ -203,7 +213,7 @@ public class DB {
                 rsRecords.close();
             }
 
-            String getAllData = "SELECT * FROM " + R_TABLE;
+            String getAllData = "SELECT * FROM " + R_TABLE + " WHERE " +SOLD_COL + " = \'N\'";
             rsRecords = statementRDM.executeQuery(getAllData);
 
             if (rDM == null) {
@@ -364,7 +374,7 @@ public class DB {
                 rsRecords.close();
             }
 
-            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\' AND %s = 2";
+            String searchSQLTemplate = "SELECT * FROM %s WHERE (%s LIKE ? OR %s LIKE ?) AND (%s = \'N\' AND %s = 2)";
             String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL, STATUS_COL);
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -401,7 +411,7 @@ public class DB {
                 rsRecords.close();
             }
 
-            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\' AND %s = 3";
+            String searchSQLTemplate = "SELECT * FROM %s WHERE (%s LIKE ? OR %s LIKE ?) AND (%s = \'N\' AND %s = 3)";
             String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL, STATUS_COL);
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -438,7 +448,7 @@ public class DB {
                 rsRecords.close();
             }
 
-            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\' AND %s NOT IN (3)";
+            String searchSQLTemplate = "SELECT * FROM %s WHERE (%s LIKE ? OR %s LIKE ?) AND (%s = \'N\' AND %s NOT IN (3))";
             String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL, STATUS_COL);
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
@@ -468,6 +478,7 @@ public class DB {
         }
     }
 
+    //I figured it'd be easier to search for sales based on the record sold
     public static boolean searchSales(String search){
         try{
 
@@ -579,6 +590,7 @@ public class DB {
         }
     }
 
+    //This query totals the profits for consignors
     public static boolean runTotals(int search){
         try{
 
@@ -615,6 +627,7 @@ public class DB {
         }
     }
 
+    //called when program is shut down
     public static void shutdown() {
         try {
             if (rsConsignors != null) {

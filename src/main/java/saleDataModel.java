@@ -1,3 +1,5 @@
+//Similar to the other models, this is the salesDataModel.  The sales table contains records of the records that are sold.
+
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.sql.ResultSet;
