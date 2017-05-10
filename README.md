@@ -20,4 +20,4 @@ GRANT SUPER ON *.* TO 'user'@'localhost' IDENTIFIED BY 'password';
 
 Replace the user/password in the DB class file with your user and password
 
-There's an issue when using the invoices menu where after totaling the payments for a driver.  Not all the columns get populated so you see sql errors.  The code still runs but it's just not as pretty. 
+There's an issue when using the invoices menu where after totaling the payments for a driver.  Not all the columns get populated so you see sql errors.  The code still runs but it's just not as pretty.  I'm pretty proud of my sql queries though. It was hard work but I really enjoyed the project.
