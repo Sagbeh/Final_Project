@@ -1,8 +1,4 @@
-import sun.reflect.generics.repository.ConstructorRepository;
-
 import java.sql.*;
-import java.sql.Date;
-import java.util.*;
 
 public class DB {
 
@@ -26,16 +22,22 @@ public class DB {
     public static final String STATUS_COL = "status";
     public static final String NOTIFIED_COL = "notified";
     public static final String SOLD_COL = "sold";
+    public static final String IID_COL = "iid";
     public static final String SID_COL = "sid";
     public static final String SOLDDATE_COL = "sold_date";
     public static final String SOLDPRICE_COL = "sold_price";
     public static final String CIDPROFIT_COL = "cid_profit";
     public static final String STOREPROFIT_COL = "store_profit";
     public static final String AMOUNTPAID_COL = "amount_paid";
-    public static final String PAYMENTDATE_COL = "payment_date";
+    public static final String INVOICEDATE_COL = "invoice_date";
     public static final String BALANCE_COL = "balance";
 
 
+    static Statement statementRDM = null;   // for record JTable TableModel
+    static Statement statementCDM = null;   // for consigner TableModel
+    static Statement statementIDM = null;   // etc..
+    static Statement statementSDM = null;
+    static Statement getSIDStatment = null;
     static Statement statement = null;
     static Connection conn = null;
     static ResultSet rsConsignors = null;
@@ -47,6 +49,7 @@ public class DB {
     public static recordDataModel rDM;
     public static saleDataModel sDM;
     public static invoiceDataModel iDM;
+
 
 
     DB() {
@@ -63,6 +66,11 @@ public class DB {
         try {
             conn = DriverManager.getConnection(DB_CONNECTION_URL, USER, PASSWORD);
             statement = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            statementCDM = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            statementRDM = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            statementSDM = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            statementIDM = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            getSIDStatment = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
         } catch (SQLException se) {
             se.printStackTrace();
         }
@@ -72,7 +80,33 @@ public class DB {
         loadRecords();
         loadSales();
         loadInvoices();
+        eventScheduler();
 
+    }
+
+    //This runs and if a Record is older than 30 days old, the sale price is reduced to 1 and the status is changed to 2 which indicates that it is in the bargain bin
+    //execute this query in your DB to allow user to use eventscheduler: GRANT SUPER ON *.* TO 'user'@'localhost' IDENTIFIED BY 'password';
+    private void eventScheduler() {
+
+        try {
+
+            String enableEventScheduler = "SET GLOBAL event_scheduler = 1";
+            PreparedStatement enableEventSchedulerSQL = conn.prepareStatement(enableEventScheduler, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            enableEventSchedulerSQL.executeUpdate();
+
+            String configureBargainEvent = "CREATE EVENT if not exists newEvent ON SCHEDULE EVERY 1 DAY DO UPDATE records SET status= 2 and sales_price = 1.00 WHERE date_added<=CURRENT_DATE - INTERVAL 30 DAY and sold = \"N\"";
+            PreparedStatement configureBargainEventSQL = conn.prepareStatement(configureBargainEvent, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            String configureDonationEvent = "CREATE EVENT if not exists newEvent ON SCHEDULE EVERY 1 DAY DO UPDATE records SET status= 3 and sales_price = 0.00 WHERE date_added<=CURRENT_DATE - INTERVAL 365 DAY and sold = \"N\"";
+            PreparedStatement configureDonationEventSQL = conn.prepareStatement(configureDonationEvent, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            configureBargainEventSQL.executeUpdate();
+            configureDonationEventSQL.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void createTables() {
@@ -87,14 +121,14 @@ public class DB {
             String createConsignorsTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int not NULL AUTO_INCREMENT, %s VARCHAR (50), %s VARCHAR (25), PRIMARY KEY (%s))";
             String createConsignorsTableSQL = String.format(createConsignorsTableSQLTemplate, C_TABLE, CID_COL, NAME_COL, PHONE_COL, CID_COL);
 
-            String createRecordsTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int not NULL AUTO_INCREMENT, %s int, %s VARCHAR (50), %s VARCHAR (50), %s decimal (10,2), %s date, %s int, %s VARCHAR (1), %s int, PRIMARY KEY (%s))";
-            String createRecordsTableSQL = String.format(createRecordsTableSQLTemplate, R_TABLE, RID_COL, CID_COL, ARTIST_COL, TITLE_COL, SALESPRICE_COL, DATEADDED_COL, STATUS_COL, NOTIFIED_COL, SOLD_COL, RID_COL);
+            String createRecordsTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int not NULL AUTO_INCREMENT, %s int, %s VARCHAR (50), %s VARCHAR (50), %s decimal (10,2), %s int, %s VARCHAR (1), %s VARCHAR (1), %s date, PRIMARY KEY (%s))";
+            String createRecordsTableSQL = String.format(createRecordsTableSQLTemplate, R_TABLE, RID_COL, CID_COL, ARTIST_COL, TITLE_COL, SALESPRICE_COL, STATUS_COL, NOTIFIED_COL, SOLD_COL, DATEADDED_COL, RID_COL);
 
-            String createSalesTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int not NULL AUTO_INCREMENT, %s int, %s decimal (10,2), %s decimal (10,2), PRIMARY KEY (%s))";
-            String createSalesTableSQL = String.format(createSalesTableSQLTemplate, S_TABLE, SID_COL, RID_COL, SOLDDATE_COL, SOLDPRICE_COL, SID_COL);
+            String createSalesTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int not NULL AUTO_INCREMENT, %s int, %s decimal (10,2), %s date, PRIMARY KEY (%s))";
+            String createSalesTableSQL = String.format(createSalesTableSQLTemplate, S_TABLE, SID_COL, RID_COL, SOLDPRICE_COL, SOLDDATE_COL, SID_COL);
 
-            String createInvoicesTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int, %s int, %s decimal (10,2), %s decimal (10,2), %s decimal (10,2), %s date, %s decimal (10,2))";
-            String createInvoicesTableSQL = String.format(createInvoicesTableSQLTemplate, I_TABLE, SID_COL, CID_COL, CIDPROFIT_COL, STOREPROFIT_COL, AMOUNTPAID_COL, PAYMENTDATE_COL, BALANCE_COL);
+            String createInvoicesTableSQLTemplate = "CREATE TABLE IF NOT EXISTS %s (%s int not NULL AUTO_INCREMENT, %s int, %s int, %s decimal (10,2), %s decimal (10,2), %s decimal (10,2), %s decimal (10,2), %s date, PRIMARY KEY (%s))";
+            String createInvoicesTableSQL = String.format(createInvoicesTableSQLTemplate, I_TABLE, IID_COL, SID_COL, CID_COL, CIDPROFIT_COL, STOREPROFIT_COL, AMOUNTPAID_COL, BALANCE_COL, INVOICEDATE_COL, IID_COL);
 
             statement.executeUpdate(createConsignorsTableSQL);
             System.out.println("Created consignors table");
@@ -110,6 +144,27 @@ public class DB {
         }
     }
 
+    public int getSID(int rid) {
+
+        int val = 0;
+        try {
+
+            String queryTemplate = "SELECT %s FROM %s WHERE %s = " + rid;
+            String query = String.format(queryTemplate, SID_COL, S_TABLE, RID_COL);
+
+            PreparedStatement psgetSID = conn.prepareStatement(query, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+            //Kept getting an error indicating the result set was before the curser.
+            //Resolved here: http://stackoverflow.com/questions/2120255/resultset-exception-before-start-of-result-set
+            ResultSet rs = psgetSID.executeQuery(query);
+            rs.next();
+            val = ((Number) rs.getObject(1)).intValue();
+
+        } catch (SQLException se) {
+            se.printStackTrace();
+        }
+        return val;
+    }
+
 
     //load consignors from database, and update data model with results
     public static boolean loadConsignors() {
@@ -120,7 +175,7 @@ public class DB {
             }
 
             String getAllData = "SELECT * FROM " + C_TABLE ;
-            rsConsignors = statement.executeQuery(getAllData);
+            rsConsignors = statementCDM.executeQuery(getAllData);
 
             if (cDM == null) {
                 //If no current consignorDataModel, then make one
@@ -149,9 +204,9 @@ public class DB {
             }
 
             String getAllData = "SELECT * FROM " + R_TABLE;
-            rsRecords = statement.executeQuery(getAllData);
+            rsRecords = statementRDM.executeQuery(getAllData);
 
-            if (rsRecords == null) {
+            if (rDM == null) {
                 //If no current recordDataModel, then make one
                 rDM = new recordDataModel(rsRecords);
             } else {
@@ -179,7 +234,7 @@ public class DB {
             }
 
             String getAllData = "SELECT * FROM " + S_TABLE;
-            rsSales = statement.executeQuery(getAllData);
+            rsSales = statementSDM.executeQuery(getAllData);
 
             if (sDM == null) {
                 //If no current salesDataModel, then make one
@@ -207,7 +262,7 @@ public class DB {
             }
 
             String getAllData = "SELECT * FROM " + I_TABLE;
-            rsInvoices = statement.executeQuery(getAllData);
+            rsInvoices = statementIDM.executeQuery(getAllData);
 
             if (iDM == null) {
                 //If no current invoiceDataModel, then make one
@@ -265,15 +320,15 @@ public class DB {
         }
     }
 
-    public static boolean searchRecords(String search){
+    public static boolean searchAllRecords(String search){
         try{
 
             if (rsRecords!=null) {
                 rsRecords.close();
             }
 
-            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ?";
-            String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL);
+            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\'";
+            String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL);
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
@@ -295,26 +350,138 @@ public class DB {
             return true;
 
         } catch (Exception e) {
-            System.out.println("Error searching for consignors");
+            System.out.println("Error searching for records");
             System.out.println(e);
             e.printStackTrace();
             return false;
         }
     }
 
-    public static boolean searchSales(int search){
+    public static boolean searchBargainRecords(String search){
+        try{
+
+            if (rsRecords!=null) {
+                rsRecords.close();
+            }
+
+            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\' AND %s = 2";
+            String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL, STATUS_COL);
+            System.out.println("The SQL for the prepared statement is " + searchSQL);
+            PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            psSearch.setString(1, "%" + search + "%");
+            psSearch.setString(2, "%" + search + "%");
+            //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
+            System.out.println(psSearch.toString());
+
+            rsRecords = psSearch.executeQuery();
+
+            if (rDM == null) {
+                //create new recordDataModel if it doesn't exist
+                rDM = new recordDataModel(rsRecords);
+            } else {
+                //Or, if one already exists, update its ResultSet
+                rDM.updateResultSet(rsRecords);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error searching for records");
+            System.out.println(e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean searchDonationRecords(String search){
+        try{
+
+            if (rsRecords!=null) {
+                rsRecords.close();
+            }
+
+            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\' AND %s = 3";
+            String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL, STATUS_COL);
+            System.out.println("The SQL for the prepared statement is " + searchSQL);
+            PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            psSearch.setString(1, "%" + search + "%");
+            psSearch.setString(2, "%" + search + "%");
+            //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
+            System.out.println(psSearch.toString());
+
+            rsRecords = psSearch.executeQuery();
+
+            if (rDM == null) {
+                //create new recordDataModel if it doesn't exist
+                rDM = new recordDataModel(rsRecords);
+            } else {
+                //Or, if one already exists, update its ResultSet
+                rDM.updateResultSet(rsRecords);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error searching for records");
+            System.out.println(e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean searchRecordsForSale(String search){
+        try{
+
+            if (rsRecords!=null) {
+                rsRecords.close();
+            }
+
+            String searchSQLTemplate = "SELECT * FROM %s WHERE %s LIKE ? OR %s LIKE ? AND %s = \'N\' AND %s NOT IN (3)";
+            String searchSQL = String.format(searchSQLTemplate, R_TABLE, ARTIST_COL, TITLE_COL, SOLD_COL, STATUS_COL);
+            System.out.println("The SQL for the prepared statement is " + searchSQL);
+            PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            psSearch.setString(1, "%" + search + "%");
+            psSearch.setString(2, "%" + search + "%");
+            //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
+            System.out.println(psSearch.toString());
+
+            rsRecords = psSearch.executeQuery();
+
+            if (rDM == null) {
+                //create new recordDataModel if it doesn't exist
+                rDM = new recordDataModel(rsRecords);
+            } else {
+                //Or, if one already exists, update its ResultSet
+                rDM.updateResultSet(rsRecords);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error searching for records");
+            System.out.println(e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean searchSales(String search){
         try{
 
             if (rsSales!=null) {
                 rsSales.close();
             }
 
-            String searchSQLTemplate = "SELECT * FROM %s WHERE %s = ?";
-            String searchSQL = String.format(searchSQLTemplate, S_TABLE, RID_COL);
+            String searchSQLTemplate = "SELECT %s.* FROM %s LEFT JOIN %s ON %s.%s = %s.%s WHERE %s LIKE ? OR %s LIKE ?";
+            String searchSQL = String.format(searchSQLTemplate, S_TABLE, S_TABLE, R_TABLE, S_TABLE, RID_COL, R_TABLE, RID_COL);
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
-            psSearch.setInt(1, search);
+            psSearch.setString(1, "%" + search + "%");
+            psSearch.setString(2, "%" + search + "%");
             //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
             System.out.println(psSearch.toString());
 
@@ -331,14 +498,52 @@ public class DB {
             return true;
 
         } catch (Exception e) {
-            System.out.println("Error searching for consignors");
+            System.out.println("Error searching for sales");
             System.out.println(e);
             e.printStackTrace();
             return false;
         }
     }
 
-    public static boolean searchInvoices(int search){
+
+
+    public static boolean searchInvoicesBySID(String search){
+        try{
+
+            if (rsInvoices!=null) {
+                rsInvoices.close();
+            }
+
+            String searchSQLTemplate = "SELECT * FROM %s WHERE %s = ?";
+            String searchSQL = String.format(searchSQLTemplate, I_TABLE, SID_COL);
+            System.out.println("The SQL for the prepared statement is " + searchSQL);
+            PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            psSearch.setString(1, search);
+            //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
+            System.out.println(psSearch.toString());
+
+            rsInvoices = psSearch.executeQuery();
+
+            if (iDM == null) {
+                //create new invoiceDataModel if it doesn't exist
+                iDM = new invoiceDataModel(rsInvoices);
+            } else {
+                //Or, if one already exists, update its ResultSet
+                iDM.updateResultSet(rsInvoices);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error searching for invoices");
+            System.out.println(e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean searchInvoicesByCID(String search){
         try{
 
             if (rsInvoices!=null) {
@@ -347,6 +552,42 @@ public class DB {
 
             String searchSQLTemplate = "SELECT * FROM %s WHERE %s = ?";
             String searchSQL = String.format(searchSQLTemplate, I_TABLE, CID_COL);
+            System.out.println("The SQL for the prepared statement is " + searchSQL);
+            PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+
+            psSearch.setString(1, search);
+            //For debugging - displays the actual SQL created in the PreparedStatement after the data has been set
+            System.out.println(psSearch.toString());
+
+            rsInvoices = psSearch.executeQuery();
+
+            if (iDM == null) {
+                //create new invoiceDataModel if it doesn't exist
+                iDM = new invoiceDataModel(rsInvoices);
+            } else {
+                //Or, if one already exists, update its ResultSet
+                iDM.updateResultSet(rsInvoices);
+            }
+
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error searching for invoices");
+            System.out.println(e);
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean runTotals(int search){
+        try{
+
+            if (rsInvoices!=null) {
+                rsInvoices.close();
+            }
+
+            String searchSQLTemplate = "SELECT %s , Sum( %s ) AS TotalPaid FROM %s where %s = ? Group by %s;";
+            String searchSQL = String.format(searchSQLTemplate, CID_COL, AMOUNTPAID_COL,I_TABLE, CID_COL, CID_COL);
             System.out.println("The SQL for the prepared statement is " + searchSQL);
             PreparedStatement psSearch = conn.prepareStatement(searchSQL,ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
 
@@ -367,7 +608,7 @@ public class DB {
             return true;
 
         } catch (Exception e) {
-            System.out.println("Error searching for consignors");
+            System.out.println("Error searching for invoices");
             System.out.println(e);
             e.printStackTrace();
             return false;
@@ -422,6 +663,48 @@ public class DB {
         }
 
         try {
+            if (statementCDM != null) {
+                statementCDM.close();
+                System.out.println("Statement closed");
+            }
+        } catch (SQLException se){
+            //Closing the connection could throw an exception too
+            se.printStackTrace();
+        }
+
+        try {
+            if (statementRDM != null) {
+                statementRDM.close();
+                System.out.println("Statement closed");
+            }
+        } catch (SQLException se){
+            //Closing the connection could throw an exception too
+            se.printStackTrace();
+        }
+
+        try {
+            if (statementSDM != null) {
+                statementSDM.close();
+                System.out.println("Statement closed");
+            }
+        } catch (SQLException se){
+            //Closing the connection could throw an exception too
+            se.printStackTrace();
+        }
+
+        try {
+            if (statementIDM != null) {
+                statementIDM.close();
+                System.out.println("Statement closed");
+            }
+        } catch (SQLException se){
+            //Closing the connection could throw an exception too
+            se.printStackTrace();
+        }
+
+
+
+        try {
             if (conn != null) {
                 conn.close();
                 System.out.println("Database connection closed");
@@ -431,5 +714,6 @@ public class DB {
             se.printStackTrace();
         }
     }
+
 
 }

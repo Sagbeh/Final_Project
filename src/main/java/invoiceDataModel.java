@@ -1,3 +1,4 @@
+import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -79,7 +80,7 @@ public class invoiceDataModel extends AbstractTableModel {
     }
 
     //returns true if successful, false if error occurs
-    public boolean insertRow(int sid, int cid, double cidProfit, double storeProfit, double amountPaid, double balance, Date paymentDate) {
+    public boolean insertRow(int sid, int cid, double cidProfit, double storeProfit, double amountPaid, double balance, java.sql.Date paymentDate) {
 
         try {
             //Move to insert row, insert the appropriate data in each column, insert the row, move cursor back to where it was before we started
@@ -90,8 +91,8 @@ public class invoiceDataModel extends AbstractTableModel {
             resultSet.updateDouble(DB.STOREPROFIT_COL, storeProfit);
             resultSet.updateDouble(DB.AMOUNTPAID_COL, amountPaid);
             resultSet.updateDouble(DB.BALANCE_COL, balance);
-            paymentDate = new Date();
-            resultSet.updateDate(DB.PAYMENTDATE_COL, (java.sql.Date) paymentDate);
+            Date date = new Date();
+            resultSet.updateDate(DB.INVOICEDATE_COL, new java.sql.Date(date.getTime()));
             resultSet.insertRow();
             resultSet.moveToCurrentRow();
             fireTableDataChanged();
@@ -102,31 +103,25 @@ public class invoiceDataModel extends AbstractTableModel {
             return true;
 
         } catch (SQLException e) {
-            System.out.println("Error adding row");
+            System.out.println("Error adding invoice row");
             System.out.println(e);
             return false;
         }
 
     }
 
-    public boolean updateRow(int row, int sid, int cid, double cidProfit, double storeProfit, double amountPaid, double balance, Date paymentDate) {
+    public boolean updateRow(int row, double amountPaid, double balance) {
 
         try {
-            resultSet.moveToInsertRow();
-            resultSet.updateInt(DB.SID_COL, sid);
-            resultSet.updateInt(DB.CID_COL, cid);
-            resultSet.updateDouble(DB.CIDPROFIT_COL, cidProfit);
-            resultSet.updateDouble(DB.STOREPROFIT_COL, storeProfit);
             resultSet.updateDouble(DB.AMOUNTPAID_COL, amountPaid);
             resultSet.updateDouble(DB.BALANCE_COL, balance);
-            paymentDate = new Date();
-            resultSet.updateDate(DB.PAYMENTDATE_COL, (java.sql.Date) paymentDate);
             resultSet.updateRow();
+
             fireTableDataChanged();
             return true;
 
         } catch (Exception e) {
-            System.out.println("Error updating row");
+            System.out.println("Error updating invoice row");
             System.out.println(e);
             return false;
         }

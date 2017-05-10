@@ -79,7 +79,7 @@ public class recordDataModel extends AbstractTableModel {
     }
 
     //returns true if successful, false if error occurs
-    public boolean insertRow(int cid, String artist, String title, double salesPrice, int status, String notified, int sold, Date dateAdded) {
+    public boolean insertRow(int cid, String artist, String title, double salesPrice, int status, String notified, String sold, java.sql.Date dateAdded) {
 
         try {
             //Move to insert row, insert the appropriate data in each column, insert the row, move cursor back to where it was before we started
@@ -90,9 +90,9 @@ public class recordDataModel extends AbstractTableModel {
             resultSet.updateDouble(DB.SALESPRICE_COL, salesPrice);
             resultSet.updateInt(DB.STATUS_COL, status);
             resultSet.updateString(DB.NOTIFIED_COL, notified);
-            resultSet.updateInt(DB.SOLD_COL, sold);
-            dateAdded = new Date();
-            resultSet.updateDate(DB.DATEADDED_COL, (java.sql.Date) dateAdded);
+            resultSet.updateString(DB.SOLD_COL, sold);
+            Date date = new Date();
+            resultSet.updateDate(DB.DATEADDED_COL, new java.sql.Date(date.getTime()));
             resultSet.insertRow();
             resultSet.moveToCurrentRow();
             fireTableDataChanged();
@@ -110,18 +110,28 @@ public class recordDataModel extends AbstractTableModel {
 
     }
 
-    public boolean updateRow(int row, int cid, String artist, String title, double salesPrice, int status, String notified, int sold) {
+    public boolean notify(int row, String notified) {
 
         try {
-            resultSet.absolute(row+1);
-            resultSet.moveToInsertRow();
-            resultSet.updateInt(DB.CID_COL, cid);
-            resultSet.updateString(DB.ARTIST_COL, artist);
-            resultSet.updateString(DB.TITLE_COL, title);
-            resultSet.updateDouble(DB.SALESPRICE_COL, salesPrice);
-            resultSet.updateInt(DB.STATUS_COL, status);
+            resultSet.absolute(row + 1);
             resultSet.updateString(DB.NOTIFIED_COL, notified);
-            resultSet.updateInt(DB.SOLD_COL, sold);
+            resultSet.updateRow();
+            fireTableDataChanged();
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("Error updating row");
+            System.out.println(e);
+            return false;
+        }
+
+    }
+
+    public boolean sold(int row) {
+
+        try {
+            resultSet.absolute(row + 1);
+            resultSet.updateString(DB.SOLD_COL, "Y");
             resultSet.updateRow();
             fireTableDataChanged();
             return true;

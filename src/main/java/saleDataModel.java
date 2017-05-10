@@ -80,7 +80,7 @@ public class saleDataModel extends AbstractTableModel {
     }
 
     //returns true if successful, false if error occurs
-    public boolean insertRow(int rid, double soldPrice, Date soldDate) {
+    public boolean insertRow(int rid, double soldPrice, java.sql.Date soldDate) {
 
         try {
             //Move to insert row, insert the appropriate data in each column, insert the row, move cursor back to where it was before we started
@@ -88,8 +88,8 @@ public class saleDataModel extends AbstractTableModel {
             resultSet.moveToInsertRow();
             resultSet.updateInt(DB.RID_COL, rid);
             resultSet.updateDouble(DB.SOLDPRICE_COL, soldPrice);
-            soldDate = new Date();
-            resultSet.updateDate(DB.SOLDDATE_COL, (java.sql.Date) soldDate);
+            Date date = new Date();
+            resultSet.updateDate(DB.SOLDDATE_COL, new java.sql.Date(date.getTime()));
             resultSet.insertRow();
             resultSet.moveToCurrentRow();
             fireTableDataChanged();
@@ -100,7 +100,7 @@ public class saleDataModel extends AbstractTableModel {
             return true;
 
         } catch (SQLException e) {
-            System.out.println("Error adding row");
+            System.out.println("Error adding sales row");
             System.out.println(e);
             return false;
         }
